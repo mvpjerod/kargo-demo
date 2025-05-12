@@ -15,7 +15,7 @@ helm:
       twilio:
         messagingServiceId: "MGdeee1f11f7772f54ca3126417f890e02"
     server:
-      image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-server:2.36.0"
+      image: public.ecr.aws/nginx/nginx1.28.0
       secrets: mcloud/us-east-1/dev/default/backend
     web:
       image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-web:1.81.0"
