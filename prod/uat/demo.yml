@@ -1,0 +1,90 @@
+name: Demo
+id: demo
+helm:
+  chart:
+    repoURL: https://github.com/Baxter-PIMS/mcloud-helm-chart.git
+    path: chart
+    targetRevision: 2.17.2
+  values:
+    global:
+      clinicSlug: demo
+    clinicName: Demo
+    env: "prod"
+    region: "us-east-1"
+    integrations:
+      twilio:
+        messagingServiceId: "MGdeee1f11f7772f54ca3126417f890e02"
+    server:
+      image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-server:2.36.0"
+      secrets: mcloud/us-east-1/dev/default/backend
+    web:
+      image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-web:1.81.0"
+      secrets: mcloud/us-east-1/dev/default/web
+      additionalSecrets:
+        - name: mcloud/us-east-1/dev/demo/web
+      rum:
+        enabled: true
+        sessionReplaySampleRate: 100
+    workers:
+      - name: pdf-worker
+        image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-server:2.36.0"
+        secrets: mcloud/us-east-1/dev/default/backend
+        roleArn: "arn:aws:iam::637423417760:role/mcloud-dev-us-east-1-irsa-worker-role"
+        command: ["ddtrace-run", "celery"]
+        args: ["-A", "app.workers.celery", "worker", "-l", "info", "-Q", "pdf"]
+        apm:
+          enabled: true
+        envVars:
+          - name: "VETCOVE_CLINIC_QUEUE_TEMPLATE"
+            value: "mcloud-us-east-1-dev-$CLINIC-vetcove-webhook"
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 250m
+          limits:
+            memory: 1465Mi
+            cpu: 500m
+      - name: worker
+        image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-server:2.36.0"
+        secrets: mcloud/us-east-1/dev/default/backend
+        roleArn: "arn:aws:iam::637423417760:role/mcloud-dev-us-east-1-irsa-worker-role"
+        command: ["ddtrace-run", "celery"]
+        args: ["-A", "app.workers.celery", "worker", "-B", "-l", "info", "-Q", "default"]
+        apm:
+          enabled: true
+        envVars:
+          - name: "VETCOVE_CLINIC_QUEUE_TEMPLATE"
+            value: "mcloud-us-east-1-dev-$CLINIC-vetcove-webhook"
+        resources:
+          requests:
+            memory: 1465Mi
+            cpu: 250m
+          limits:
+            memory: 2Gi
+            cpu: 500m
+    migration:
+      image: "637423417760.dkr.ecr.us-east-1.amazonaws.com/dev/onyx-server:2.36.0"
+      secrets: mcloud/us-east-1/dev/default/backend
+      envVars:
+        - name: "CORS_ALLOWED_ORIGINS"
+          value: "https://demo.ue1.dev.mcloud.vet"
+        - name: "APP_ENV"
+          value: "dev"
+        - name: "VERSION"
+          value: "0.0.1"
+        - name: "DOMAIN"
+          value: "mcloud.vet"
+        - name: "SUBDOMAIN"
+          value: "demo"
+        - name: "AUTH0_API_AUDIENCE"
+          value: "https://mvetpartners-dev.us.auth0.com/api/v2/"
+        - name: "AUTH0_DOMAIN"
+          value: "mvetpartners-dev.us.auth0.com"
+        - name: "AUTH0_CONNECTION"
+          value: "Username-Password-Authentication"
+        - name: "AUTH0_CLIENT_ID"
+          value: "x3ieBtLuopSYmYKSS59b8xDJMH4kbotE"
+        - name: "AUTH0_CALLBACK_URL"
+          value: "https://demo.api.ue1.dev.mcloud.vet/api/auth/callback"
+        - name: "BROKER_URL"
+          value: "redis://demo-redis-master:6379"
